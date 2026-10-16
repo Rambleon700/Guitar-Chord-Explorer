@@ -1,20 +1,3 @@
-**Fixed.**  
-
-The problem is that the search only looked for **one** chord name. When you paste a progression like `Dm G C` it treated the whole string as a single chord name → “No matching chords”.
-
-Here’s the corrected version of the search logic + a more complete chord database.
-
-### Quick fix (what changed)
-- Search now supports **multiple chords** (space or comma separated)
-- Typing or pasting `Dm G C` or `Am, C, G, F` will show all of them
-- Better short-name handling (`Dm`, `G`, `C`, `Em7`, etc.)
-- Expanded the chord database again
-
----
-
-**Replace your current `index.html` with this updated full version:**
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -645,11 +628,3 @@ document.body.addEventListener("touchstart", initAudio, { once: true });
 </script>
 </body>
 </html>
-```
-
-### Now it works with progressions
-- Paste `Dm G C` → shows D minor, G major, C major
-- Paste `Am Cmaj7 F` → works
-- Single chords still work as before
-
-Replace the file on GitHub Pages and try pasting a progression again.
