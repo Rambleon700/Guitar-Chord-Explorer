@@ -1,0 +1,780 @@
+**Here’s the complete latest single HTML file** with everything included:
+
+- Realistic wood fretboard diagrams  
+- Variable string thickness  
+- Fret inlays  
+- Soft shadows on finger dots  
+- Click any chord diagram to hear a guitar strum  
+- Realistic strumming (notes delayed low → high)  
+- Circle of Fifths progression generator  
+- Play full progression with visual highlight  
+- Click individual progression chords to play them  
+
+Just copy everything below, save it as **`index.html`**, and upload/replace it on your GitHub Pages repo.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guitar Chord Tools – Explorer + Circle of Fifths</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --card: #1a2332;
+    --accent: #4ecdc4;
+    --accent2: #ff6b6b;
+    --text: #e8eef5;
+    --muted: #8b9bb4;
+    --highlight: #f7c948;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 1.5rem;
+    line-height: 1.45;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: .3rem; }
+  .sub { color: var(--muted); margin-bottom: 1.2rem; font-size: .95rem; }
+
+  .tabs { display: flex; gap: .6rem; margin-bottom: 1.8rem; flex-wrap: wrap; }
+  .tab {
+    background: #243044; color: var(--text); border: 1px solid #2a3a4f;
+    padding: .55rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all .15s;
+  }
+  .tab:hover { background: #2f4058; }
+  .tab.active { background: var(--accent); color: #0f1419; border-color: var(--accent); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; margin-bottom: 1.5rem; }
+  input, select, button {
+    background: var(--card); border: 1px solid #2a3a4f; color: var(--text);
+    padding: .55rem .9rem; border-radius: 8px; font-size: 1rem;
+  }
+  input { min-width: 180px; }
+  button { background: var(--accent); color: #0f1419; font-weight: 600; cursor: pointer; border: none; }
+  button:hover { filter: brightness(1.1); }
+  .quick { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+  .quick button { background: #243044; color: var(--text); font-size: .85rem; padding: .35rem .65rem; }
+  #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1.3rem; }
+  .chord-card {
+    background: var(--card); border-radius: 14px; padding: 1.1rem 1rem 1.2rem;
+    text-align: center; border: 1px solid #2a3a4f; cursor: pointer; transition: all .15s;
+  }
+  .chord-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .chord-card h3 { font-size: 1.15rem; margin-bottom: .35rem; color: var(--accent); }
+  .chord-card .pos { font-size: .78rem; color: var(--muted); margin-bottom: .6rem; }
+  .empty { color: var(--muted); grid-column: 1 / -1; padding: 2rem; text-align: center; }
+
+  .layout { display: grid; grid-template-columns: 1fr 340px; gap: 2rem; align-items: start; }
+  @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } }
+  .circle-wrap {
+    background: var(--card); border-radius: 16px; padding: 1.5rem;
+    border: 1px solid #2a3a4f; text-align: center;
+  }
+  .circle-svg { max-width: 100%; height: auto; cursor: pointer; }
+  .key-label { font-size: 13px; font-weight: 600; fill: var(--text); pointer-events: none; }
+  .key-label.active { fill: var(--highlight); }
+  .key-ring { fill: #243044; stroke: #3a4f6a; stroke-width: 1.5; cursor: pointer; transition: fill .2s; }
+  .key-ring:hover { fill: #2f4058; }
+  .key-ring.active { fill: var(--accent); stroke: var(--highlight); }
+
+  .controls-box {
+    background: var(--card); border-radius: 16px; padding: 1.4rem; border: 1px solid #2a3a4f;
+  }
+  .controls-box h2 { font-size: 1.15rem; margin-bottom: 1rem; color: var(--accent); }
+  label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .3rem; }
+  select, .controls-box button { width: 100%; margin-bottom: 1rem; }
+  button.secondary { background: #2f4058; color: var(--text); }
+  button.secondary:hover { background: #3a4f6a; }
+  button.play { background: #2ecc71; }
+  button.stop { background: var(--accent2); }
+
+  .result {
+    margin-top: 1.5rem; background: var(--card); border-radius: 16px;
+    padding: 1.4rem; border: 1px solid #2a3a4f; min-height: 180px;
+  }
+  .result h3 { color: var(--highlight); margin-bottom: .6rem; }
+  .progression { display: flex; flex-wrap: wrap; gap: .6rem; margin: 1rem 0; }
+  .chord-chip {
+    background: #243044; border: 1px solid var(--accent); border-radius: 10px;
+    padding: .55rem .9rem; font-weight: 600; font-size: 1.1rem; min-width: 70px;
+    text-align: center; transition: all .2s; cursor: pointer;
+  }
+  .chord-chip:hover { background: #2f4058; }
+  .chord-chip.playing {
+    background: var(--accent); color: #0f1419; border-color: var(--highlight); transform: scale(1.08);
+  }
+  .roman { font-size: .75rem; color: var(--muted); display: block; margin-top: 2px; }
+  .chord-chip.playing .roman { color: #0f1419; opacity: .8; }
+  .meta { color: var(--muted); font-size: .9rem; margin-top: .8rem; }
+  .actions { display: flex; gap: .6rem; margin-top: 1.2rem; flex-wrap: wrap; }
+  .actions button { width: auto; margin: 0; padding: .5rem 1rem; }
+
+  footer { margin-top: 2.5rem; font-size: .8rem; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showPanel('explorer')">🎸 Chord Explorer</button>
+    <button class="tab" onclick="showPanel('circle')">⭕ Circle of Fifths Progressions</button>
+  </div>
+
+  <!-- CHORD EXPLORER -->
+  <div id="explorer" class="panel active">
+    <h1>🎸 Guitar Chord Explorer</h1>
+    <p class="sub">Realistic fretboard diagrams • Click any chord to hear a guitar strum</p>
+
+    <div class="controls">
+      <input id="search" type="text" placeholder="e.g. Am, Cmaj7, G7, F#m…" autocomplete="off">
+      <select id="root">
+        <option value="">All roots</option>
+        <option>A</option><option>A#</option><option>Bb</option><option>B</option>
+        <option>C</option><option>C#</option><option>Db</option><option>D</option>
+        <option>D#</option><option>Eb</option><option>E</option><option>F</option>
+        <option>F#</option><option>Gb</option><option>G</option><option>G#</option><option>Ab</option>
+      </select>
+      <select id="type">
+        <option value="">All types</option>
+        <option value="major">Major</option><option value="minor">Minor</option>
+        <option value="7">Dominant 7</option><option value="maj7">Major 7</option>
+        <option value="m7">Minor 7</option><option value="sus2">Sus2</option>
+        <option value="sus4">Sus4</option><option value="dim">Dim</option>
+        <option value="aug">Aug</option><option value="5">Power (5)</option>
+        <option value="6">6</option><option value="m6">m6</option>
+        <option value="9">9</option><option value="add9">add9</option>
+      </select>
+      <button onclick="render()">Show</button>
+    </div>
+
+    <div class="quick" id="quick"></div>
+    <div id="results"></div>
+  </div>
+
+  <!-- CIRCLE OF FIFTHS -->
+  <div id="circle" class="panel">
+    <h1>Circle of Fifths → Great Chord Progressions</h1>
+    <p class="sub">Generate progressions and hear them with realistic guitar strumming</p>
+
+    <div class="layout">
+      <div class="circle-wrap">
+        <svg class="circle-svg" viewBox="0 0 400 400" id="circleSvg"></svg>
+        <p style="margin-top:1rem;color:var(--muted);font-size:.9rem">Click any key to set the tonal center</p>
+      </div>
+
+      <div>
+        <div class="controls-box">
+          <h2>Progression Generator</h2>
+          <label>Key</label>
+          <select id="keySelect">
+            <option value="C">C</option><option value="G">G</option><option value="D">D</option>
+            <option value="A">A</option><option value="E">E</option><option value="B">B</option>
+            <option value="F#">F#</option><option value="Db">Db</option><option value="Ab">Ab</option>
+            <option value="Eb">Eb</option><option value="Bb">Bb</option><option value="F">F</option>
+          </select>
+
+          <label>Mode</label>
+          <select id="modeSelect">
+            <option value="major">Major</option>
+            <option value="minor">Natural Minor</option>
+          </select>
+
+          <label>Progression Style</label>
+          <select id="styleSelect">
+            <option value="random">Random (recommended)</option>
+            <option value="pop">Classic Pop</option>
+            <option value="jazz">Jazz / ii–V–I</option>
+            <option value="folk">Folk / Ballad</option>
+            <option value="rock">Rock / Bluesy</option>
+          </select>
+
+          <button onclick="generate()">🎲 Generate Progression</button>
+          <button class="secondary" onclick="randomKeyAndGenerate()">🎲 Random Key + Progression</button>
+        </div>
+
+        <div class="result" id="result">
+          <p style="color:var(--muted)">Click “Generate” to create a progression.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Realistic fretboard diagrams + guitar strumming sound</footer>
+
+<script>
+// ========== TAB SWITCHING ==========
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'circle') drawCircle(document.getElementById('keySelect').value);
+}
+
+// ========== AUDIO ENGINE ==========
+let audioCtx = null;
+let masterGain = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.7;
+    masterGain.connect(audioCtx.destination);
+  }
+  return audioCtx;
+}
+
+function noteToFreq(note, octave = 3) {
+  const map = {C:0,"C#":1,Db:1,D:2,"D#":3,Eb:3,E:4,F:5,"F#":6,Gb:6,G:7,"G#":8,Ab:8,A:9,"A#":10,Bb:10,B:11};
+  const semi = map[note];
+  if (semi === undefined) return 220;
+  return 440 * Math.pow(2, ((octave - 4) * 12 + (semi - 9)) / 12);
+}
+
+function playGuitarNote(freq, startTime, duration = 1.8, velocity = 0.9) {
+  const ctx = getAudioContext();
+  const now = startTime;
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+
+  osc1.type = "triangle";
+  osc2.type = "sine";
+  osc1.frequency.value = freq;
+  osc2.frequency.value = freq * 1.003;
+
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(1800 + velocity * 1200, now);
+  filter.frequency.exponentialRampToValueAtTime(600, now + duration * 0.6);
+  filter.Q.value = 1.2;
+
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.35 * velocity, now + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.12 * velocity, now + 0.12);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  osc1.connect(filter);
+  osc2.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+
+  osc1.start(now);
+  osc2.start(now);
+  osc1.stop(now + duration + 0.05);
+  osc2.stop(now + duration + 0.05);
+}
+
+function strumChord(notes, startTime = null, strumSpeed = 0.038) {
+  const ctx = getAudioContext();
+  if (ctx.state === "suspended") ctx.resume();
+  const now = startTime || ctx.currentTime + 0.02;
+  const freqs = notes.map(n => noteToFreq(n, 3)).sort((a, b) => a - b);
+  freqs.forEach((freq, i) => {
+    const t = now + i * strumSpeed;
+    const velocity = 0.75 + (i / freqs.length) * 0.25;
+    playGuitarNote(freq, t, 1.9, velocity);
+  });
+}
+
+function parseChord(chordName) {
+  let name = chordName.trim();
+  let root = name[0];
+  if (name[1] === "#" || name[1] === "b") {
+    root += name[1];
+    name = name.slice(2);
+  } else {
+    name = name.slice(1);
+  }
+  const intervals = [0];
+  if (name.includes("dim")) {
+    intervals.push(3, 6);
+  } else if (name.startsWith("m") || name.includes("min")) {
+    intervals.push(3, 7);
+    if (name.includes("maj7")) intervals.push(11);
+    else if (name.includes("7")) intervals.push(10);
+  } else {
+    intervals.push(4, 7);
+    if (name.includes("maj7")) intervals.push(11);
+    else if (name.includes("7")) intervals.push(10);
+  }
+  const notes = intervals.map(i => transpose(root, i));
+  notes.push(transpose(root, 12));
+  return notes;
+}
+
+// ========== REALISTIC FRETBOARD SVG ==========
+function renderChordSVG(pos) {
+  const frets = pos.frets;
+  const fingers = pos.fingers || [];
+  const base = pos.baseFret || 1;
+  const barres = pos.barres || [];
+  const numFrets = 5;
+
+  const width = 180;
+  const height = 210;
+  const left = 28;
+  const top = 38;
+  const stringGap = 22;
+  const fretGap = 30;
+  const boardWidth = 5 * stringGap;
+  const boardHeight = numFrets * fretGap;
+
+  let svg = `<svg viewBox="0 0 ${width} ${height}" width="180" height="210" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Fretboard background (wood)
+  svg += `<rect x="${left-6}" y="${top-2}" width="${boardWidth+12}" height="${boardHeight+4}" 
+           rx="3" fill="#3d2b1f" stroke="#2a1c14" stroke-width="1.5"/>`;
+
+  // Subtle wood grain
+  for (let i = 0; i < 8; i++) {
+    const y = top + 8 + i * 18;
+    svg += `<line x1="${left-4}" y1="${y}" x2="${left+boardWidth+4}" y2="${y}" 
+             stroke="#4a3528" stroke-width="0.6" opacity="0.4"/>`;
+  }
+
+  // Nut
+  if (base === 1) {
+    svg += `<rect x="${left-6}" y="${top-8}" width="${boardWidth+12}" height="7" 
+             fill="#e8e0d0" stroke="#c9bfa8" stroke-width="0.8"/>`;
+  } else {
+    svg += `<text x="${left-18}" y="${top+16}" fill="#c9bfa8" font-size="13" font-weight="600">${base}</text>`;
+  }
+
+  // Frets
+  for (let f = 0; f <= numFrets; f++) {
+    const y = top + f * fretGap;
+    const isThick = f === 0 && base === 1;
+    svg += `<line x1="${left}" y1="${y}" x2="${left+boardWidth}" y2="${y}" 
+             stroke="#c9bfa8" stroke-width="${isThick ? 3.5 : 1.8}"/>`;
+  }
+
+  // Strings (thicker bass)
+  for (let s = 0; s < 6; s++) {
+    const x = left + s * stringGap;
+    const thickness = 1.2 + (5 - s) * 0.35;
+    svg += `<line x1="${x}" y1="${top}" x2="${x}" y2="${top+boardHeight}" 
+             stroke="#d4cfc4" stroke-width="${thickness}" opacity="0.9"/>`;
+  }
+
+  // Fret markers
+  const markers = [3, 5, 7, 9];
+  markers.forEach(m => {
+    const rel = m - (base === 1 ? 0 : base - 1);
+    if (rel >= 1 && rel <= numFrets) {
+      const y = top + (rel - 0.5) * fretGap;
+      svg += `<circle cx="${left + boardWidth/2}" cy="${y}" r="4.5" fill="#c9bfa8" opacity="0.55"/>`;
+    }
+  });
+  const rel12 = 12 - (base === 1 ? 0 : base - 1);
+  if (rel12 >= 1 && rel12 <= numFrets) {
+    const y = top + (rel12 - 0.5) * fretGap;
+    svg += `<circle cx="${left + boardWidth/2 - 9}" cy="${y}" r="4" fill="#c9bfa8" opacity="0.55"/>`;
+    svg += `<circle cx="${left + boardWidth/2 + 9}" cy="${y}" r="4" fill="#c9bfa8" opacity="0.55"/>`;
+  }
+
+  // Open / Mute
+  for (let s = 0; s < 6; s++) {
+    const f = frets[s];
+    const x = left + s * stringGap;
+    if (f === -1) {
+      svg += `<text x="${x}" y="${top-14}" text-anchor="middle" fill="#ff6b6b" 
+               font-size="16" font-weight="700">×</text>`;
+    } else if (f === 0) {
+      svg += `<circle cx="${x}" cy="${top-16}" r="6" fill="none" stroke="#4ecdc4" stroke-width="2.2"/>`;
+    }
+  }
+
+  // Finger dots
+  for (let s = 0; s < 6; s++) {
+    let f = frets[s];
+    if (f === undefined || f <= 0) continue;
+    const rel = f - (base === 1 ? 0 : base - 1);
+    if (rel < 1 || rel > numFrets) continue;
+
+    const x = left + s * stringGap;
+    const y = top + (rel - 0.5) * fretGap;
+
+    svg += `<circle cx="${x+1}" cy="${y+1.5}" r="11" fill="#000" opacity="0.25"/>`;
+    svg += `<circle cx="${x}" cy="${y}" r="11" fill="#4ecdc4"/>`;
+    const finger = fingers[s];
+    if (finger && finger > 0) {
+      svg += `<text x="${x}" y="${y+4.5}" text-anchor="middle" fill="#0f1419" 
+               font-size="13" font-weight="700">${finger}</text>`;
+    }
+  }
+
+  // Barre
+  if (barres.length) {
+    const bf = barres[0];
+    const rel = bf - (base === 1 ? 0 : base - 1);
+    if (rel >= 1 && rel <= numFrets) {
+      const y = top + (rel - 0.5) * fretGap;
+      svg += `<rect x="${left-3}" y="${y-7}" width="${boardWidth+6}" height="14" 
+               rx="7" fill="#4ecdc4" opacity="0.22"/>`;
+    }
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+// ========== CHORD DATABASE ==========
+const DB = {
+  "A major":[{frets:[-1,0,2,2,2,0],fingers:[0,0,1,2,3,0],baseFret:1,barres:[]},{frets:[5,7,7,6,5,5],fingers:[1,3,4,2,1,1],baseFret:5,barres:[5]},{frets:[-1,12,14,14,14,12],fingers:[0,1,3,3,3,1],baseFret:12,barres:[12]}],
+  "A minor":[{frets:[-1,0,2,2,1,0],fingers:[0,0,2,3,1,0],baseFret:1,barres:[]},{frets:[5,7,7,5,5,5],fingers:[1,3,4,1,1,1],baseFret:5,barres:[5]},{frets:[-1,12,14,14,13,12],fingers:[0,1,3,4,2,1],baseFret:12,barres:[12]}],
+  "A7":[{frets:[-1,0,2,0,2,0],fingers:[0,0,1,0,2,0],baseFret:1,barres:[]},{frets:[5,7,5,6,5,5],fingers:[1,3,1,2,1,1],baseFret:5,barres:[5]}],
+  "Amaj7":[{frets:[-1,0,2,1,2,0],fingers:[0,0,2,1,3,0],baseFret:1,barres:[]},{frets:[5,7,6,6,5,5],fingers:[1,4,2,3,1,1],baseFret:5,barres:[5]}],
+  "Am7":[{frets:[-1,0,2,0,1,0],fingers:[0,0,2,0,1,0],baseFret:1,barres:[]},{frets:[5,7,5,5,5,5],fingers:[1,3,1,1,1,1],baseFret:5,barres:[5]}],
+  "Asus2":[{frets:[-1,0,2,2,0,0],fingers:[0,0,1,2,0,0],baseFret:1,barres:[]}],
+  "Asus4":[{frets:[-1,0,2,2,3,0],fingers:[0,0,1,2,3,0],baseFret:1,barres:[]}],
+  "Adim":[{frets:[-1,0,1,2,1,-1],fingers:[0,0,1,3,2,0],baseFret:1,barres:[]}],
+  "Aaug":[{frets:[-1,0,3,2,2,1],fingers:[0,0,4,2,3,1],baseFret:1,barres:[]}],
+  "A5":[{frets:[-1,0,2,2,-1,-1],fingers:[0,0,1,2,0,0],baseFret:1,barres:[]}],
+  "A6":[{frets:[-1,0,2,2,2,2],fingers:[0,0,1,1,1,1],baseFret:1,barres:[2]}],
+  "Am6":[{frets:[-1,0,2,2,1,2],fingers:[0,0,2,3,1,4],baseFret:1,barres:[]}],
+  "A9":[{frets:[-1,0,2,4,2,3],fingers:[0,0,1,4,2,3],baseFret:1,barres:[]}],
+  "Aadd9":[{frets:[-1,0,2,2,0,0],fingers:[0,0,1,2,0,0],baseFret:1,barres:[]}],
+
+  "Bb major":[{frets:[-1,1,3,3,3,1],fingers:[0,1,2,3,4,1],baseFret:1,barres:[1]},{frets:[6,8,8,7,6,6],fingers:[1,3,4,2,1,1],baseFret:6,barres:[6]}],
+  "Bb minor":[{frets:[-1,1,3,3,2,1],fingers:[0,1,3,4,2,1],baseFret:1,barres:[1]},{frets:[6,8,8,6,6,6],fingers:[1,3,4,1,1,1],baseFret:6,barres:[6]}],
+  "Bb7":[{frets:[-1,1,3,1,3,1],fingers:[0,1,3,1,4,1],baseFret:1,barres:[1]}],
+  "Bbm7":[{frets:[-1,1,3,1,2,1],fingers:[0,1,3,1,2,1],baseFret:1,barres:[1]}],
+
+  "B major":[{frets:[-1,2,4,4,4,2],fingers:[0,1,3,3,3,1],baseFret:2,barres:[2]},{frets:[7,9,9,8,7,7],fingers:[1,3,4,2,1,1],baseFret:7,barres:[7]}],
+  "B minor":[{frets:[-1,2,4,4,3,2],fingers:[0,1,3,4,2,1],baseFret:2,barres:[2]},{frets:[7,9,9,7,7,7],fingers:[1,3,4,1,1,1],baseFret:7,barres:[7]}],
+  "B7":[{frets:[-1,2,1,2,0,2],fingers:[0,2,1,3,0,4],baseFret:1,barres:[]}],
+  "Bm7":[{frets:[-1,2,0,2,0,2],fingers:[0,1,0,2,0,3],baseFret:1,barres:[]}],
+  "Bmaj7":[{frets:[-1,2,4,3,4,2],fingers:[0,1,3,2,4,1],baseFret:2,barres:[2]}],
+
+  "C major":[{frets:[-1,3,2,0,1,0],fingers:[0,3,2,0,1,0],baseFret:1,barres:[]},{frets:[-1,3,5,5,5,3],fingers:[0,1,3,3,3,1],baseFret:3,barres:[3]},{frets:[8,10,10,9,8,8],fingers:[1,3,4,2,1,1],baseFret:8,barres:[8]}],
+  "C minor":[{frets:[-1,3,5,5,4,3],fingers:[0,1,3,4,2,1],baseFret:3,barres:[3]},{frets:[8,10,10,8,8,8],fingers:[1,3,4,1,1,1],baseFret:8,barres:[8]}],
+  "C7":[{frets:[-1,3,2,3,1,0],fingers:[0,3,2,4,1,0],baseFret:1,barres:[]}],
+  "Cmaj7":[{frets:[-1,3,2,0,0,0],fingers:[0,3,2,0,0,0],baseFret:1,barres:[]}],
+  "Cm7":[{frets:[-1,3,5,3,4,3],fingers:[0,1,3,1,2,1],baseFret:3,barres:[3]}],
+  "Csus2":[{frets:[-1,3,0,0,1,3],fingers:[0,2,0,0,1,3],baseFret:1,barres:[]}],
+  "Csus4":[{frets:[-1,3,3,0,1,1],fingers:[0,3,4,0,1,1],baseFret:1,barres:[]}],
+  "C5":[{frets:[-1,3,5,-1,-1,-1],fingers:[0,1,3,0,0,0],baseFret:3,barres:[]}],
+  "Cadd9":[{frets:[-1,3,2,0,3,0],fingers:[0,2,1,0,3,0],baseFret:1,barres:[]}],
+
+  "C# major":[{frets:[-1,4,6,6,6,4],fingers:[0,1,3,3,3,1],baseFret:4,barres:[4]},{frets:[9,11,11,10,9,9],fingers:[1,3,4,2,1,1],baseFret:9,barres:[9]}],
+  "C# minor":[{frets:[-1,4,6,6,5,4],fingers:[0,1,3,4,2,1],baseFret:4,barres:[4]},{frets:[9,11,11,9,9,9],fingers:[1,3,4,1,1,1],baseFret:9,barres:[9]}],
+  "Db major":[{frets:[-1,4,6,6,6,4],fingers:[0,1,3,3,3,1],baseFret:4,barres:[4]}],
+  "Db minor":[{frets:[-1,4,6,6,5,4],fingers:[0,1,3,4,2,1],baseFret:4,barres:[4]}],
+
+  "D major":[{frets:[-1,-1,0,2,3,2],fingers:[0,0,0,1,3,2],baseFret:1,barres:[]},{frets:[-1,5,7,7,7,5],fingers:[0,1,3,3,3,1],baseFret:5,barres:[5]},{frets:[10,12,12,11,10,10],fingers:[1,3,4,2,1,1],baseFret:10,barres:[10]}],
+  "D minor":[{frets:[-1,-1,0,2,3,1],fingers:[0,0,0,2,3,1],baseFret:1,barres:[]},{frets:[-1,5,7,7,6,5],fingers:[0,1,3,4,2,1],baseFret:5,barres:[5]}],
+  "D7":[{frets:[-1,-1,0,2,1,2],fingers:[0,0,0,2,1,3],baseFret:1,barres:[]}],
+  "Dmaj7":[{frets:[-1,-1,0,2,2,2],fingers:[0,0,0,1,1,1],baseFret:1,barres:[2]}],
+  "Dm7":[{frets:[-1,-1,0,2,1,1],fingers:[0,0,0,2,1,1],baseFret:1,barres:[]}],
+  "Dsus2":[{frets:[-1,-1,0,2,3,0],fingers:[0,0,0,1,3,0],baseFret:1,barres:[]}],
+  "Dsus4":[{frets:[-1,-1,0,2,3,3],fingers:[0,0,0,1,2,3],baseFret:1,barres:[]}],
+  "D5":[{frets:[-1,-1,0,2,3,-1],fingers:[0,0,0,1,2,0],baseFret:1,barres:[]}],
+
+  "Eb major":[{frets:[-1,-1,1,3,4,3],fingers:[0,0,1,3,4,2],baseFret:1,barres:[]},{frets:[-1,6,8,8,8,6],fingers:[0,1,3,3,3,1],baseFret:6,barres:[6]}],
+  "Eb minor":[{frets:[-1,-1,1,3,4,2],fingers:[0,0,1,3,4,2],baseFret:1,barres:[]},{frets:[-1,6,8,8,7,6],fingers:[0,1,3,4,2,1],baseFret:6,barres:[6]}],
+
+  "E major":[{frets:[0,2,2,1,0,0],fingers:[0,2,3,1,0,0],baseFret:1,barres:[]},{frets:[7,9,9,8,7,7],fingers:[1,3,4,2,1,1],baseFret:7,barres:[7]},{frets:[12,14,14,13,12,12],fingers:[1,3,4,2,1,1],baseFret:12,barres:[12]}],
+  "E minor":[{frets:[0,2,2,0,0,0],fingers:[0,1,2,0,0,0],baseFret:1,barres:[]},{frets:[7,9,9,7,7,7],fingers:[1,3,4,1,1,1],baseFret:7,barres:[7]}],
+  "E7":[{frets:[0,2,0,1,0,0],fingers:[0,2,0,1,0,0],baseFret:1,barres:[]}],
+  "Emaj7":[{frets:[0,2,1,1,0,0],fingers:[0,3,1,2,0,0],baseFret:1,barres:[]}],
+  "Em7":[{frets:[0,2,0,0,0,0],fingers:[0,1,0,0,0,0],baseFret:1,barres:[]}],
+  "Esus4":[{frets:[0,2,2,2,0,0],fingers:[0,1,2,3,0,0],baseFret:1,barres:[]}],
+  "E5":[{frets:[0,2,2,-1,-1,-1],fingers:[0,1,2,0,0,0],baseFret:1,barres:[]}],
+
+  "F major":[{frets:[1,3,3,2,1,1],fingers:[1,3,4,2,1,1],baseFret:1,barres:[1]},{frets:[-1,-1,3,5,6,5],fingers:[0,0,1,3,4,2],baseFret:3,barres:[]},{frets:[8,10,10,9,8,8],fingers:[1,3,4,2,1,1],baseFret:8,barres:[8]}],
+  "F minor":[{frets:[1,3,3,1,1,1],fingers:[1,3,4,1,1,1],baseFret:1,barres:[1]},{frets:[-1,-1,3,5,6,4],fingers:[0,0,1,3,4,2],baseFret:3,barres:[]}],
+  "F7":[{frets:[1,3,1,2,1,1],fingers:[1,3,1,2,1,1],baseFret:1,barres:[1]}],
+  "Fmaj7":[{frets:[-1,-1,3,2,1,0],fingers:[0,0,3,2,1,0],baseFret:1,barres:[]}],
+  "Fm7":[{frets:[1,3,1,1,1,1],fingers:[1,3,1,1,1,1],baseFret:1,barres:[1]}],
+
+  "F# major":[{frets:[2,4,4,3,2,2],fingers:[1,3,4,2,1,1],baseFret:2,barres:[2]},{frets:[-1,-1,4,6,7,6],fingers:[0,0,1,3,4,2],baseFret:4,barres:[]}],
+  "F# minor":[{frets:[2,4,4,2,2,2],fingers:[1,3,4,1,1,1],baseFret:2,barres:[2]},{frets:[-1,-1,4,6,7,5],fingers:[0,0,1,3,4,2],baseFret:4,barres:[]}],
+  "F#7":[{frets:[2,4,2,3,2,2],fingers:[1,3,1,2,1,1],baseFret:2,barres:[2]}],
+  "F#m7":[{frets:[2,4,2,2,2,2],fingers:[1,3,1,1,1,1],baseFret:2,barres:[2]}],
+  "Gb major":[{frets:[2,4,4,3,2,2],fingers:[1,3,4,2,1,1],baseFret:2,barres:[2]}],
+  "Gb minor":[{frets:[2,4,4,2,2,2],fingers:[1,3,4,1,1,1],baseFret:2,barres:[2]}],
+
+  "G major":[{frets:[3,2,0,0,0,3],fingers:[2,1,0,0,0,3],baseFret:1,barres:[]},{frets:[3,5,5,4,3,3],fingers:[1,3,4,2,1,1],baseFret:3,barres:[3]},{frets:[-1,10,12,12,12,10],fingers:[0,1,3,3,3,1],baseFret:10,barres:[10]}],
+  "G minor":[{frets:[3,5,5,3,3,3],fingers:[1,3,4,1,1,1],baseFret:3,barres:[3]},{frets:[-1,10,12,12,11,10],fingers:[0,1,3,4,2,1],baseFret:10,barres:[10]}],
+  "G7":[{frets:[3,2,0,0,0,1],fingers:[3,2,0,0,0,1],baseFret:1,barres:[]}],
+  "Gmaj7":[{frets:[3,2,0,0,0,2],fingers:[3,2,0,0,0,1],baseFret:1,barres:[]}],
+  "Gm7":[{frets:[3,5,3,3,3,3],fingers:[1,3,1,1,1,1],baseFret:3,barres:[3]}],
+  "Gsus2":[{frets:[3,0,0,0,3,3],fingers:[1,0,0,0,2,3],baseFret:1,barres:[]}],
+  "Gsus4":[{frets:[3,3,0,0,1,3],fingers:[2,3,0,0,1,4],baseFret:1,barres:[]}],
+  "G5":[{frets:[3,5,5,-1,-1,-1],fingers:[1,3,4,0,0,0],baseFret:3,barres:[]}],
+  "Gadd9":[{frets:[3,2,0,2,0,3],fingers:[2,1,0,3,0,4],baseFret:1,barres:[]}],
+
+  "G# major":[{frets:[4,6,6,5,4,4],fingers:[1,3,4,2,1,1],baseFret:4,barres:[4]}],
+  "G# minor":[{frets:[4,6,6,4,4,4],fingers:[1,3,4,1,1,1],baseFret:4,barres:[4]}],
+  "Ab major":[{frets:[4,6,6,5,4,4],fingers:[1,3,4,2,1,1],baseFret:4,barres:[4]}],
+  "Ab minor":[{frets:[4,6,6,4,4,4],fingers:[1,3,4,1,1,1],baseFret:4,barres:[4]}]
+};
+
+const quickList = ["Am","C","G","Em","D","A","E","F","Bm","Dm","A7","Cmaj7","G7","Em7","Fmaj7"];
+document.getElementById("quick").innerHTML = quickList.map(c =>
+  `<button onclick="document.getElementById('search').value='${c}';render()">${c}</button>`
+).join("");
+
+function normalize(q) {
+  q = q.trim().toLowerCase().replace(/\s+/g,"");
+  const map = {
+    "a":"A major","am":"A minor","a7":"A7","amaj7":"Amaj7","am7":"Am7",
+    "bb":"Bb major","bbm":"Bb minor","a#":"Bb major","a#m":"Bb minor",
+    "b":"B major","bm":"B minor","b7":"B7","bm7":"Bm7","bmaj7":"Bmaj7",
+    "c":"C major","cm":"C minor","c7":"C7","cmaj7":"Cmaj7","cm7":"Cm7",
+    "c#":"C# major","c#m":"C# minor","db":"Db major","dbm":"Db minor",
+    "d":"D major","dm":"D minor","d7":"D7","dmaj7":"Dmaj7","dm7":"Dm7",
+    "eb":"Eb major","ebm":"Eb minor","d#":"Eb major","d#m":"Eb minor",
+    "e":"E major","em":"E minor","e7":"E7","emaj7":"Emaj7","em7":"Em7",
+    "f":"F major","fm":"F minor","f7":"F7","fmaj7":"Fmaj7","fm7":"Fm7",
+    "f#":"F# major","f#m":"F# minor","gb":"Gb major","gbm":"Gb minor",
+    "g":"G major","gm":"G minor","g7":"G7","gmaj7":"Gmaj7","gm7":"Gm7",
+    "g#":"G# major","g#m":"G# minor","ab":"Ab major","abm":"Ab minor"
+  };
+  if (map[q]) return map[q];
+  for (const k of Object.keys(DB)) if (k.toLowerCase().replace(/\s+/g,"") === q) return k;
+  return q;
+}
+
+function render() {
+  const q = document.getElementById("search").value;
+  const rootFilter = document.getElementById("root").value;
+  const typeFilter = document.getElementById("type").value;
+  const results = document.getElementById("results");
+  results.innerHTML = "";
+  let keys = Object.keys(DB);
+  if (q) {
+    const norm = normalize(q);
+    keys = keys.filter(k => k.toLowerCase().includes(norm.toLowerCase()) || k.toLowerCase().replace(/\s+/g,"") === norm.toLowerCase().replace(/\s+/g,""));
+    if (DB[norm]) keys = [norm];
+  }
+  if (rootFilter) {
+    keys = keys.filter(k => k.startsWith(rootFilter) ||
+      (rootFilter==="A#" && k.startsWith("Bb")) || (rootFilter==="Bb" && k.startsWith("A#")) ||
+      (rootFilter==="C#" && k.startsWith("Db")) || (rootFilter==="Db" && k.startsWith("C#")) ||
+      (rootFilter==="D#" && k.startsWith("Eb")) || (rootFilter==="Eb" && k.startsWith("D#")) ||
+      (rootFilter==="F#" && k.startsWith("Gb")) || (rootFilter==="Gb" && k.startsWith("F#")) ||
+      (rootFilter==="G#" && k.startsWith("Ab")) || (rootFilter==="Ab" && k.startsWith("G#")));
+  }
+  if (typeFilter) {
+    keys = keys.filter(k => {
+      const lower = k.toLowerCase();
+      if (typeFilter === "major") return lower.endsWith(" major") && !lower.includes("minor");
+      if (typeFilter === "minor") return lower.includes("minor") && !lower.includes("m7") && !lower.includes("m6");
+      return lower.includes(typeFilter);
+    });
+  }
+  if (!keys.length) {
+    results.innerHTML = `<div class="empty">No matching chords. Try Am, Cmaj7, G7…</div>`;
+    return;
+  }
+  keys.sort().forEach(name => {
+    DB[name].forEach((pos, i) => {
+      const card = document.createElement("div");
+      card.className = "chord-card";
+      card.innerHTML = `<h3>${name}</h3><div class="pos">Position ${i+1} • base fret ${pos.baseFret||1}</div>${renderChordSVG(pos)}`;
+      card.onclick = () => {
+        const notes = parseChord(name);
+        strumChord(notes);
+      };
+      results.appendChild(card);
+    });
+  });
+}
+
+document.getElementById("search").addEventListener("keydown", e => { if (e.key === "Enter") render(); });
+document.getElementById("root").addEventListener("change", render);
+document.getElementById("type").addEventListener("change", render);
+render();
+
+// ========== CIRCLE OF FIFTHS ==========
+const CIRCLE = ["C","G","D","A","E","B","F#","Db","Ab","Eb","Bb","F"];
+const DIATONIC = {
+  major: {
+    1: k => k, 2: k => transpose(k,2)+"m", 3: k => transpose(k,4)+"m",
+    4: k => transpose(k,5), 5: k => transpose(k,7), 6: k => transpose(k,9)+"m", 7: k => transpose(k,11)+"dim"
+  },
+  minor: {
+    1: k => k+"m", 2: k => transpose(k,2)+"dim", 3: k => transpose(k,3),
+    4: k => transpose(k,5)+"m", 5: k => transpose(k,7)+"m", 6: k => transpose(k,8), 7: k => transpose(k,10)
+  }
+};
+const TEMPLATES = {
+  pop: [[1,5,6,4],[1,6,4,5],[6,4,1,5],[1,4,6,5],[1,5,6,3,4,1,4,5],[1,6,2,5]],
+  jazz: [[2,5,1],[2,5,1,6],[1,6,2,5],[3,6,2,5,1],[2,5,1,4]],
+  folk: [[1,4,1,5],[1,5,1,4],[1,6,4,5],[1,4,5,1],[6,4,1,5]],
+  rock: [[1,5,6,4],[1,7,4,5],[1,4,5,4],[1,6,5,4],[1,5,4,1]]
+};
+const NOTES = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+const NOTE_INDEX = {}; NOTES.forEach((n,i) => NOTE_INDEX[n]=i);
+const NICE = {"C#":"Db","D#":"Eb","F#":"F#","G#":"Ab","A#":"Bb"};
+
+function transpose(root, semitones) {
+  let idx = NOTE_INDEX[root];
+  if (idx === undefined) {
+    const map = {Db:"C#",Eb:"D#",Gb:"F#",Ab:"G#",Bb:"A#"};
+    idx = NOTE_INDEX[map[root]||root];
+  }
+  if (idx === undefined) return root;
+  let note = NOTES[(idx + semitones + 12) % 12];
+  const flatKeys = ["F","Bb","Eb","Ab","Db","Gb"];
+  if (flatKeys.includes(root) && NICE[note]) note = NICE[note];
+  return note;
+}
+
+let isPlaying = false, playTimeouts = [];
+
+function stopPlayback() {
+  isPlaying = false;
+  playTimeouts.forEach(clearTimeout);
+  playTimeouts = [];
+  document.querySelectorAll(".chord-chip.playing").forEach(el => el.classList.remove("playing"));
+  updatePlayButton(false);
+}
+
+function playProgression() {
+  if (!window._lastChordObjects?.length) return;
+  stopPlayback();
+  isPlaying = true;
+  updatePlayButton(true);
+  const ctx = getAudioContext();
+  if (ctx.state === "suspended") ctx.resume();
+  const chords = window._lastChordObjects;
+  const beatDuration = 1.7;
+  const start = ctx.currentTime + 0.08;
+  chords.forEach((chord, i) => {
+    const notes = parseChord(chord.name);
+    const t = start + i * beatDuration;
+    setTimeout(() => strumChord(notes), (t - ctx.currentTime) * 1000);
+    const to = setTimeout(() => {
+      document.querySelectorAll(".chord-chip").forEach(el => el.classList.remove("playing"));
+      const chip = document.querySelector(`.chord-chip[data-index="${i}"]`);
+      if (chip) chip.classList.add("playing");
+    }, (t - ctx.currentTime) * 1000);
+    playTimeouts.push(to);
+  });
+  playTimeouts.push(setTimeout(stopPlayback, (chords.length * beatDuration + 0.4) * 1000));
+}
+
+function updatePlayButton(playing) {
+  const btn = document.getElementById("playBtn");
+  if (!btn) return;
+  if (playing) {
+    btn.textContent = "⏹ Stop";
+    btn.className = "stop";
+    btn.onclick = stopPlayback;
+  } else {
+    btn.textContent = "▶ Play Progression";
+    btn.className = "play";
+    btn.onclick = playProgression;
+  }
+}
+
+function drawCircle(activeKey) {
+  const svg = document.getElementById("circleSvg");
+  const cx = 200, cy = 200, r = 150;
+  let html = `<circle cx="${cx}" cy="${cy}" r="${r+30}" fill="#1a2332" stroke="#2a3a4f" stroke-width="2"/>
+    <circle cx="${cx}" cy="${cy}" r="70" fill="#0f1419" stroke="#2a3a4f" stroke-width="2"/>
+    <text x="${cx}" y="${cy-8}" text-anchor="middle" fill="var(--accent)" font-size="18" font-weight="700">Circle</text>
+    <text x="${cx}" y="${cy+14}" text-anchor="middle" fill="var(--muted)" font-size="13">of Fifths</text>`;
+  CIRCLE.forEach((key, i) => {
+    const angle = (i * 30 - 90) * Math.PI / 180;
+    const x = cx + r * Math.cos(angle), y = cy + r * Math.sin(angle);
+    const active = key === activeKey;
+    html += `<circle class="key-ring ${active?'active':''}" cx="${x}" cy="${y}" r="28" onclick="setKey('${key}')"/>
+             <text class="key-label ${active?'active':''}" x="${x}" y="${y+5}" text-anchor="middle">${key}</text>`;
+  });
+  svg.innerHTML = html;
+}
+
+function setKey(key) {
+  document.getElementById("keySelect").value = key;
+  drawCircle(key);
+  generate();
+}
+
+function getChord(key, mode, deg) { return DIATONIC[mode][deg](key); }
+function romanNumeral(deg, mode) {
+  const M = ["I","II","III","IV","V","VI","VII"], m = ["i","ii","iii","iv","v","vi","vii"];
+  if (mode === "major") {
+    if ([1,4,5].includes(deg)) return M[deg-1];
+    if (deg === 7) return "vii°";
+    return m[deg-1];
+  } else {
+    if ([3,6,7].includes(deg)) return M[deg-1];
+    if (deg === 2) return "ii°";
+    return m[deg-1];
+  }
+}
+
+function generate() {
+  stopPlayback();
+  const key = document.getElementById("keySelect").value;
+  const mode = document.getElementById("modeSelect").value;
+  let style = document.getElementById("styleSelect").value;
+  if (style === "random") style = ["pop","jazz","folk","rock"][Math.floor(Math.random()*4)];
+  const pattern = TEMPLATES[style][Math.floor(Math.random()*TEMPLATES[style].length)];
+  const chords = pattern.map(deg => ({
+    roman: romanNumeral(deg, mode),
+    name: getChord(key, mode, deg)
+  }));
+  if (Math.random() > 0.5 && mode === "major") {
+    chords.forEach(c => {
+      if (c.roman === "V" && Math.random() > 0.25) c.name += "7";
+      if (c.roman === "ii" && Math.random() > 0.55) c.name = c.name.replace("m","m7");
+      if (c.roman === "I" && Math.random() > 0.7) c.name += "maj7";
+    });
+  }
+  window._lastChordObjects = chords;
+  window._lastChords = chords.map(c => c.name).join("  ");
+  const styleName = {pop:"Classic Pop",jazz:"Jazz / ii–V–I",folk:"Folk / Ballad",rock:"Rock"}[style] || style;
+
+  document.getElementById("result").innerHTML = `
+    <h3>${key} ${mode === "major" ? "Major" : "Natural Minor"} • ${styleName}</h3>
+    <div class="progression">
+      ${chords.map((c,i) => `
+        <div class="chord-chip" data-index="${i}" onclick="strumChord(parseChord('${c.name}'))">
+          ${c.name}<span class="roman">${c.roman}</span>
+        </div>`).join("")}
+    </div>
+    <div class="meta">Click any chord to hear it • or play the full progression with strumming</div>
+    <div class="actions">
+      <button id="playBtn" class="play" onclick="playProgression()">▶ Play Progression</button>
+      <button onclick="copyChords()">📋 Copy Chord Names</button>
+      <button class="secondary" onclick="generate()">🔄 Another Progression</button>
+    </div>`;
+  drawCircle(key);
+}
+
+function copyChords() {
+  if (!window._lastChords) return;
+  navigator.clipboard.writeText(window._lastChords)
+    .then(() => alert("Copied!\n\n" + window._lastChords + "\n\nSwitch to Chord Explorer to see the shapes."));
+}
+
+function randomKeyAndGenerate() {
+  document.getElementById("keySelect").value = CIRCLE[Math.floor(Math.random()*CIRCLE.length)];
+  document.getElementById("modeSelect").value = Math.random() > 0.4 ? "major" : "minor";
+  document.getElementById("styleSelect").value = "random";
+  generate();
+}
+
+document.getElementById("keySelect").addEventListener("change", e => drawCircle(e.target.value));
+drawCircle("C");
+generate();
+</script>
+</body>
+</html>
+```
+
+This is the full, latest version. Replace the content of your GitHub Pages `index.html` with this code and the site will have all the improvements.
